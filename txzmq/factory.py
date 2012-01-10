@@ -24,11 +24,12 @@ class ZmqFactory(object):
     @ivar context: ZeroMQ context
     @type context: L{Context}
     """
-
+    # moved to ZMQFactory
     reactor = reactor
     ioThreads = 1
     lingerPeriod = 100
 
+    # moved to ZMQFactory
     def __init__(self):
         """
         Constructor.
@@ -41,6 +42,7 @@ class ZmqFactory(object):
     def __repr__(self):
         return "ZmqFactory()"
 
+    # moved to ZMQFactory
     def shutdown(self):
         """
         Shutdown factory.
@@ -56,6 +58,7 @@ class ZmqFactory(object):
         self.context.term()
         self.context = None
 
+    # moved to ZMQFactory
     def registerForShutdown(self):
         """
         Register factory to be automatically shut down

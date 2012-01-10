@@ -67,10 +67,12 @@ class ZmqConnection(object):
         self.factory = factory
         self.endpoints = endpoints
         self.socket = Socket(factory.context, self.socketType)
-        self.queue = deque()
         self.recv_parts = []
 
+        # these two were moved to ZMQReadWriteDescriptor
+        self.queue = deque()
         self.fd = self.socket.getsockopt(constants.FD)
+
         self.socket.setsockopt(constants.LINGER, factory.lingerPeriod)
         self.socket.setsockopt(
             constants.MCAST_LOOP, int(self.allowLoopbackMulticast))
@@ -94,6 +96,7 @@ class ZmqConnection(object):
         self.factory.connections.discard(self)
 
         self.socket.close()
+        # this was moved to ZMQReadWriteDescriptor
         self.socket = None
 
         self.factory = None
@@ -102,6 +105,7 @@ class ZmqConnection(object):
         return "%s(%r, %r)" % (
             self.__class__.__name__, self.factory, self.endpoints)
 
+    # moved to ZMQReadWriteDescriptor
     def fileno(self):
         """
         Part of L{IFileDescriptor}.
@@ -111,6 +115,7 @@ class ZmqConnection(object):
         """
         return self.fd
 
+    # moved to ZMQProtocol
     def connectionLost(self, reason):
         """
         Called when the connection was lost.
@@ -131,6 +136,7 @@ class ZmqConnection(object):
         if self.factory:
             self.factory.reactor.removeReader(self)
 
+    # moved to ZMQReadWriteDescriptor
     def _readMultipart(self):
         """
         Read multipart in non-blocking manner, returns with ready message
@@ -143,6 +149,7 @@ class ZmqConnection(object):
 
                 return result
 
+    # moved to ZMQReadWriteDescriptor
     def doRead(self):
         """
         Some data is available for reading on your descriptor.
@@ -168,6 +175,7 @@ class ZmqConnection(object):
         if (events & constants.POLLOUT) == constants.POLLOUT:
             self._startWriting()
 
+    # moved to ZMQReadWriteDescriptor
     def _startWriting(self):
         """
         Start delivering messages from the queue.
@@ -183,6 +191,7 @@ class ZmqConnection(object):
                 raise e
             self.queue.popleft()
 
+    # moved to ZMQReadWriteDescriptor
     def logPrefix(self):
         """
         Part of L{ILoggingContext}.
@@ -192,6 +201,7 @@ class ZmqConnection(object):
         """
         return 'ZMQ'
 
+    # moved to ZMQReadWriteDescriptor as doWrite
     def send(self, message):
         """
         Send message via ZeroMQ.
@@ -210,6 +220,7 @@ class ZmqConnection(object):
 
         self._startWriting()
 
+    # moved to ZMQProtocol
     def messageReceived(self, message):
         """
         Called on incoming message from ZeroMQ.
@@ -218,6 +229,7 @@ class ZmqConnection(object):
         """
         raise NotImplementedError(self)
 
+    # moved into ZMQServerEndpoint and ZMQClientEndpoint
     def _connectOrBind(self):
         """
         Connect and/or bind socket to endpoints.
