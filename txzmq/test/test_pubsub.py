@@ -1,12 +1,14 @@
 """
 Tests for L{txzmq.pubsub}.
 """
+import sys
+
 from zmq.core import constants
 from zmq.core.socket import Socket
 
 from twisted.trial import unittest
 
-from txzmq import exceptions
+from txzmq import exceptions, util
 from txzmq.connection import ZmqEndpoint, ZmqEndpointType
 from txzmq.factory import ZmqFactory
 from txzmq.pubsub import ZmqPubConnection, ZmqSubConnection
@@ -225,6 +227,9 @@ class ZmqPubSubConnectionsTestCase(BaseTestCase):
 
         return _wait(0.01).addCallback(check)
 
+    brokenOnMac = ("This test is broken on Mac OS X; see this issue: "
+                   "https://github.com/smira/txZMQ/issues/6")
+    @util.skipIf(sys.platform.startswith("darwin"), brokenOnMac)
     def test_send_recv_pgm(self):
         r = ZmqTestSubConnection(ZmqEndpoint(
             ZmqEndpointType.bind, "epgm://127.0.0.1;239.192.1.1:5556"))
