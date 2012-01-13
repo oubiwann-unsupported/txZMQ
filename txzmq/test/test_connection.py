@@ -9,7 +9,7 @@ from twisted.internet.interfaces import IFileDescriptor, IReadDescriptor
 from twisted.trial import unittest
 
 from txzmq import exceptions
-from txzmq.connection import ZmqConnection, ZmqEndpoint, ZmqEndpointType
+from txzmq.connection import ZmqAddress, ZmqConnection, ZmqEndpointType
 from txzmq.factory import ZmqFactory
 from txzmq.test import _wait
 
@@ -26,6 +26,35 @@ class ZmqTestReceiver(ZmqConnection):
             self.messages = []
 
         self.messages.append(message)
+
+
+class ZmqAddressTestCase(unittest.TestCase):
+    """
+    """
+    def test_init(self):
+        addressString = "tcp://127.0.0.1:27935"
+        a = ZmqAddress(addressString)
+        self.assertEqual(a.address, addressString)
+        self.assertEqual(a.scheme, "tcp")
+        self.assertEqual(a.host, "127.0.0.1")
+        self.assertEqual(a.port, 27935)
+
+    def test_parse_no_port(self):
+        scheme, host, port = ZmqAddress.parse("inproc://name")
+        self.assertEqual(scheme, "inproc")
+        self.assertEqual(host, "name")
+        self.assertEqual(port, None)
+        scheme, host, port = ZmqAddress.parse("tcp://1.2.3.4")
+        self.assertEqual(scheme, "tcp")
+        self.assertEqual(host, "1.2.3.4")
+        self.assertEqual(port, None)
+        scheme, host, port = ZmqAddress.parse("tcp://1.2.3.4:")
+        self.assertEqual(scheme, "tcp")
+        self.assertEqual(host, "1.2.3.4")
+        self.assertEqual(port, None)
+
+    def test_bad_scheme(self):
+        self.assertRaises(AssertionError, ZmqAddress.parse, "icmp://1.2.3.4")
 
 
 class ZmqConnectionTestCase(unittest.TestCase):

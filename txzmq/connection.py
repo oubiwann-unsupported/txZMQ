@@ -26,6 +26,35 @@ class ZmqEndpointType(object):
 ZmqEndpoint = namedtuple('ZmqEndpoint', ['type', 'address'])
 
 
+class ZmqAddress(object):
+    """
+    An abstraction for ZMQ addresses.
+
+    All that's needed for ZeroMQ is an address string. However, if you have
+    special needs for manipilating an address or getting its scheme, host,
+    and/or port, you can use the ZmqAddress class.
+    """
+    def __init__(self, addressURI):
+        self.address = addressURI
+        (self.scheme, self.host, self.port) = self.parse(addressURI)
+
+    @staticmethod
+    def parse(addressURI):
+        (scheme, netloc) = addressURI.split("://")
+        assert scheme in ["tcp", "inproc", "ipc", "pgm", "epgm"]
+        parts = netloc.split(":")
+        if len(parts) == 2:
+            host = parts[0]
+            port = parts[1] or None
+        else:
+            host = netloc
+            port = None
+        if port:
+            port = int(port)
+        return (scheme, host, port)
+
+
+
 class ZmqConnection(object):
     """
     Connection through ZeroMQ, wraps up ZeroMQ socket.
