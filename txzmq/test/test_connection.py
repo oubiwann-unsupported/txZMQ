@@ -9,7 +9,7 @@ from twisted.internet.interfaces import IFileDescriptor, IReadDescriptor
 from twisted.trial import unittest
 
 from txzmq import exceptions
-from txzmq.connection import ZmqAddress, ZmqConnection, ZmqEndpointType
+from txzmq.connection import BIND, CONNECT, ZmqAddress, ZmqConnection
 from txzmq.factory import ZmqFactory
 from txzmq.test import _wait
 
@@ -73,11 +73,21 @@ class ZmqConnectionTestCase(unittest.TestCase):
         ziv.verifyClass(IFileDescriptor, ZmqConnection)
 
     def test_init(self):
-        receiver = ZmqTestReceiver(
-            self.factory, ZmqEndpoint(ZmqEndpointType.bind, "inproc://#1"))
-        sender = ZmqTestSender(
-            self.factory, ZmqEndpoint(ZmqEndpointType.connect, "inproc://#1"))
-        # XXX perform some actual checks here
+        receiver = ZmqTestReceiver("inproc://#1", type=BIND)
+        sender = ZmqTestSender("inproc://#1", type=CONNECT)
+        self.assertEqual(receiver.connectionType, "bind")
+        self.assertEqual(sender.connectionType, "connect")
+        # XXX perform some more checks here
+
+    def test_init_multiple_addresses(self):
+        sender = ZmqConnection(
+            "ipc://name", "inproc://#3", "tpc://localhost:5555", type=CONNECT)
+        expected = ('ipc://name', 'inproc://#3', 'tpc://localhost:5555')
+        self.assertEqual(sender.addresses, expected)
+
+    def test_init_bad_connection_type(self):
+        self.assertRaises(
+            AssertionError, ZmqConnection, "ipc://name", "listen")
 
     def test_repr(self):
         expected = ("ZmqTestReceiver(ZmqFactory(), "

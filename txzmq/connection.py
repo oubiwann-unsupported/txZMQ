@@ -15,15 +15,9 @@ from twisted.python import log
 from txzmq import exceptions, util
 
 
-class ZmqEndpointType(object):
-    """
-    Endpoint could be "bound" or "connected".
-    """
-    bind = "bind"
-    connect = "connect"
-
-
-ZmqEndpoint = namedtuple('ZmqEndpoint', ['type', 'address'])
+# connection types
+BIND = "bind"
+CONNECT = "connect"
 
 
 class ZmqAddress(object):
@@ -72,8 +66,8 @@ class ZmqConnection(object):
     @type factory: L{ZmqFactory}
     @ivar socket: ZeroMQ Socket
     @type socket: L{Socket}
-    @ivar endpoints: ZeroMQ addresses for connect/bind
-    @type endpoints: C{list} of L{ZmqEndpoint}
+    @ivar addresses: ZeroMQ addresses for connect/bind
+    @type addresses: C{list} of strings or L{ZmqAddress}es
     @ivar fd: file descriptor of zmq mailbox
     @type fd: C{int}
     @ivar queue: output message queue
@@ -91,15 +85,18 @@ class ZmqConnection(object):
     highWaterMark = 0
     identity = None
 
-    def __init__(self, *endpoints):
+    def __init__(self, *addresses, **kwargs):
         """
         Constructor.
 
-        @param endpoints: ZeroMQ addresses for connect/bind
-        @type endpoints: C{list} of L{ZmqEndpoint}
+        @param addresses: ZeroMQ addresses or L{ZmqAddress} objects for
+                          connect/bind
+        @type addresses: C{list} of strings or L{ZmqAddress}es
         """
         self.factory = None
-        self.endpoints = endpoints
+        self.addresses = addresses
+        self.connectionType = kwargs["type"]
+        assert self.connectionType in [BIND, CONNECT]
         self.queue = deque()
         self.recv_parts = []
         self.fd = None
@@ -108,7 +105,7 @@ class ZmqConnection(object):
 
     def __repr__(self):
         return "%s(%r, %r)" % (
-            self.__class__.__name__, self.factory, self.endpoints)
+            self.__class__.__name__, self.factory, self.addresses)
 
     def _createSocket(self, factory):
         """
@@ -127,18 +124,20 @@ class ZmqConnection(object):
 
     def _connectOrBind(self, factory):
         """
-        Connect and/or bind socket to endpoints.
+        Connect and/or bind socket to addresses.
         """
         self.socket = self._createSocket(factory)
-        for endpoint in self.endpoints:
-            if endpoint.type == ZmqEndpointType.connect:
-                self.socket.connect(endpoint.address)
+        for addresse in self.addresses:
+            if isinstance(address, ZmqAddress):
+                address = address.address
+            if self.connectionType == CONNECT:
+                self.socket.connect(address)
                 self.isConnected = True
-            elif endpoint.type == ZmqEndpointType.bind:
-                self.socket.bind(endpoint.address)
+            elif self.connectionType == BIND:
+                self.socket.bind(address)
                 self.isListening = True
             else:
-                assert False, "Unknown endpoint type %r" % endpoint
+                assert False, "Unknown address type %r" % address
         factory.connections.add(self)
         factory.reactor.addReader(self)
         self.factory = factory
