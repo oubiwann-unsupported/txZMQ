@@ -9,7 +9,7 @@ from zmq.core.socket import Socket
 from twisted.trial import unittest
 
 from txzmq import exceptions, util
-from txzmq.connection import ZmqEndpoint, ZmqEndpointType
+from txzmq.connection import BIND, CONNECT
 from txzmq.factory import ZmqFactory
 from txzmq.pubsub import ZmqPubConnection, ZmqSubConnection
 from txzmq.test import _wait
@@ -93,8 +93,7 @@ class ZmqSubConnectionTestCase(BaseTestCase):
             d = client.subscribe("tag")
             d.addCallback(checkSubscribe)
 
-        s = ZmqSubConnection(
-            ZmqEndpoint(ZmqEndpointType.connect, "tcp://127.0.0.1:5556"))
+        s = ZmqSubConnection("tcp://127.0.0.1:5556", type=CONNECT)
         self.patchSocket(TestSocketSuccess, s)
         d = s.connect(self.factory)
         d.addCallback(checkConnect)
@@ -111,8 +110,7 @@ class ZmqSubConnectionTestCase(BaseTestCase):
             d = self.assertFailure(failure, exceptions.SubscribingError)
             d.addCallback(checkSubscribe)
 
-        s = ZmqSubConnection(
-            ZmqEndpoint(ZmqEndpointType.connect, "tcp://127.0.0.1:5556"))
+        s = ZmqSubConnection("tcp://127.0.0.1:5556", type=CONNECT)
         self.patchSocket(TestSocketFailure, s)
         d = s.connect(self.factory)
         d.addCallback(checkConnect)
@@ -128,8 +126,7 @@ class ZmqSubConnectionTestCase(BaseTestCase):
             d = client.unsubscribe(None)
             d.addCallback(checkSubscribe)
 
-        s = ZmqSubConnection(
-            ZmqEndpoint(ZmqEndpointType.connect, "tcp://127.0.0.1:5556"))
+        s = ZmqSubConnection("tcp://127.0.0.1:5556", type=CONNECT)
         self.patchSocket(TestSocketSuccess, s)
         d = s.connect(self.factory)
         d.addCallback(checkConnect)
@@ -146,8 +143,7 @@ class ZmqSubConnectionTestCase(BaseTestCase):
             d = self.assertFailure(failure, exceptions.UnsubscribingError)
             d.addCallback(checkUnsubscribe)
 
-        s = ZmqSubConnection(
-            ZmqEndpoint(ZmqEndpointType.connect, "tcp://127.0.0.1:5556"))
+        s = ZmqSubConnection("tcp://127.0.0.1:5556", type=CONNECT)
         self.patchSocket(TestSocketFailure, s)
         d = s.connect(self.factory)
         d.addCallback(checkConnect)
@@ -172,8 +168,7 @@ class ZmqPubConnectionTestCase(BaseTestCase):
             d = server.publish("a really special message")
             d.addCallback(checkPublish)
 
-        s = ZmqPubConnection(
-            ZmqEndpoint(ZmqEndpointType.bind, "inproc://#1"))
+        s = ZmqPubConnection("inproc://#1", type=BIND)
         self.patch(s, 'send', fakeSend)
         d = s.listen(self.factory)
         d.addCallback(checkListen)
@@ -193,8 +188,7 @@ class ZmqPubConnectionTestCase(BaseTestCase):
             d = self.assertFailure(failure, exceptions.PublishingError)
             d.addCallback(checkPublish)
 
-        s = ZmqPubConnection(
-            ZmqEndpoint(ZmqEndpointType.bind, "inproc://#1"))
+        s = ZmqPubConnection("inproc://#1", type=BIND)
         self.patch(s, 'send', fakeSend)
         d = s.listen(self.factory)
         d.addCallback(checkListen)
@@ -207,11 +201,9 @@ class ZmqPubSubConnectionsTestCase(BaseTestCase):
     L{txzmq.pubsub.ZmqSubConnection}.
     """
     def test_send_recv(self):
-        r = ZmqTestSubConnection(
-            ZmqEndpoint(ZmqEndpointType.bind, "ipc://test-sock"))
+        r = ZmqTestSubConnection("ipc://test-sock", type=BIND)
         r.listen(self.factory)
-        s = ZmqPubConnection(
-            ZmqEndpoint(ZmqEndpointType.connect, "ipc://test-sock"))
+        s = ZmqPubConnection("ipc://test-sock", type=CONNECT)
         s.connect(self.factory)
 
         r.subscribe('tag')
@@ -231,11 +223,11 @@ class ZmqPubSubConnectionsTestCase(BaseTestCase):
                    "https://github.com/smira/txZMQ/issues/6")
     @util.skipIf(sys.platform.startswith("darwin"), brokenOnMac)
     def test_send_recv_pgm(self):
-        r = ZmqTestSubConnection(ZmqEndpoint(
-            ZmqEndpointType.bind, "epgm://127.0.0.1;239.192.1.1:5556"))
+        r = ZmqTestSubConnection(
+            "epgm://127.0.0.1;239.192.1.1:5556", type=BIND)
         r.listen(self.factory)
-        s = ZmqPubConnection(ZmqEndpoint(
-            ZmqEndpointType.connect, "epgm://127.0.0.1;239.192.1.1:5556"))
+        s = ZmqPubConnection(
+            "epgm://127.0.0.1;239.192.1.1:5556", type=CONNECT)
         s.connect(self.factory)
 
         r.subscribe('tag')
@@ -252,14 +244,11 @@ class ZmqPubSubConnectionsTestCase(BaseTestCase):
 
     def test_send_recv_multiple_endpoints(self):
         r = ZmqTestSubConnection(
-            ZmqEndpoint(ZmqEndpointType.bind, "tcp://127.0.0.1:5556"),
-            ZmqEndpoint(ZmqEndpointType.bind, "inproc://endpoint"))
+                "tcp://127.0.0.1:5556", "inproc://endpoint", type=BIND)
         r.listen(self.factory)
-        s1 = ZmqPubConnection(
-            ZmqEndpoint(ZmqEndpointType.connect, "tcp://127.0.0.1:5556"))
+        s1 = ZmqPubConnection("tcp://127.0.0.1:5556", type=CONNECT)
         s1.connect(self.factory)
-        s2 = ZmqPubConnection(
-            ZmqEndpoint(ZmqEndpointType.connect, "inproc://endpoint"))
+        s2 = ZmqPubConnection("inproc://endpoint", type=CONNECT)
         s2.connect(self.factory)
 
         r.subscribe('')

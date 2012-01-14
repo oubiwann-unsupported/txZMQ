@@ -95,7 +95,7 @@ class ZmqConnection(object):
         """
         self.factory = None
         self.addresses = addresses
-        self.connectionType = kwargs["type"]
+        self.connectionType = kwargs.get("type") or None
         assert self.connectionType in [BIND, CONNECT]
         self.queue = deque()
         self.recv_parts = []
@@ -104,8 +104,9 @@ class ZmqConnection(object):
         self.isConnected = False
 
     def __repr__(self):
-        return "%s(%r, %r)" % (
-            self.__class__.__name__, self.factory, self.addresses)
+        return "<%s with %s, connectionType=%s, addresses=%r>" % (
+            self.__class__.__name__, self.factory, self.connectionType, 
+            self.addresses)
 
     def _createSocket(self, factory):
         """
@@ -127,7 +128,7 @@ class ZmqConnection(object):
         Connect and/or bind socket to addresses.
         """
         self.socket = self._createSocket(factory)
-        for addresse in self.addresses:
+        for address in self.addresses:
             if isinstance(address, ZmqAddress):
                 address = address.address
             if self.connectionType == CONNECT:

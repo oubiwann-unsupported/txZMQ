@@ -90,19 +90,16 @@ class ZmqConnectionTestCase(unittest.TestCase):
             AssertionError, ZmqConnection, "ipc://name", "listen")
 
     def test_repr(self):
-        expected = ("ZmqTestReceiver(ZmqFactory(), "
-                    "(ZmqEndpoint(type='bind', address='inproc://#1'),))")
-        r = ZmqTestReceiver(
-            ZmqEndpoint(ZmqEndpointType.bind, "inproc://#1"))
-        r.connect(self.factory)
+        expected = ("<ZmqTestReceiver with ZmqFactory(), connectionType=bind, "
+                    "addresses=('inproc://#1',)>")
+        r = ZmqTestReceiver("inproc://#1", type=BIND)
+        r.listen(self.factory)
         self.failUnlessEqual(expected, repr(r))
 
     def test_send_recv(self):
-        r = ZmqTestReceiver(
-            ZmqEndpoint(ZmqEndpointType.bind, "inproc://#1"))
+        r = ZmqTestReceiver("inproc://#1", type=BIND)
         r.listen(self.factory)
-        s = ZmqTestSender(
-            ZmqEndpoint(ZmqEndpointType.connect, "inproc://#1"))
+        s = ZmqTestSender("inproc://#1", type=CONNECT)
         s.connect(self.factory)
 
         s.send('abcd')
@@ -116,11 +113,9 @@ class ZmqConnectionTestCase(unittest.TestCase):
         return _wait(0.01).addCallback(check)
 
     def test_send_recv_tcp(self):
-        r = ZmqTestReceiver(
-            ZmqEndpoint(ZmqEndpointType.bind, "tcp://127.0.0.1:5555"))
+        r = ZmqTestReceiver("tcp://127.0.0.1:5555", type=BIND)
         r.listen(self.factory)
-        s = ZmqTestSender(
-            ZmqEndpoint(ZmqEndpointType.connect, "tcp://127.0.0.1:5555"))
+        s = ZmqTestSender("tcp://127.0.0.1:5555", type=CONNECT)
         s.connect(self.factory)
 
         for i in xrange(100):
@@ -135,11 +130,9 @@ class ZmqConnectionTestCase(unittest.TestCase):
         return _wait(0.01).addCallback(check)
 
     def test_send_recv_tcp_large(self):
-        r = ZmqTestReceiver(
-            ZmqEndpoint(ZmqEndpointType.bind, "tcp://127.0.0.1:5555"))
+        r = ZmqTestReceiver("tcp://127.0.0.1:5555", type=BIND)
         r.listen(self.factory)
-        s = ZmqTestSender(
-            ZmqEndpoint(ZmqEndpointType.connect, "tcp://127.0.0.1:5555"))
+        s = ZmqTestSender("tcp://127.0.0.1:5555", type=CONNECT)
         s.connect(self.factory)
         s.send(["0" * 10000, "1" * 10000])
 
@@ -159,8 +152,7 @@ class ZmqConnectionTestCase(unittest.TestCase):
         def check(ignored):
             self.assertEqual(self.factory.testMessage, "Fake success!")
 
-        s = ZmqTestSender(
-            ZmqEndpoint(ZmqEndpointType.connect, "inproc://#1"))
+        s = ZmqTestSender("inproc://#1", type=CONNECT)
         self.patch(s, '_connectOrBind', fakeConnectOrBind)
         d = s.connect(self.factory)
         d.addCallback(check)
@@ -174,8 +166,7 @@ class ZmqConnectionTestCase(unittest.TestCase):
         def check(error):
             self.assertEqual(str(error), "exceptions.Exception: ohnoz!")
 
-        s = ZmqTestSender(
-            ZmqEndpoint(ZmqEndpointType.connect, "inproc://#1"))
+        s = ZmqTestSender("inproc://#1", type=CONNECT)
         self.patch(s, '_connectOrBind', fakeConnectOrBind)
         failure = s.connect(self.factory)
         d = self.assertFailure(failure, exceptions.ConnectionError)
@@ -190,8 +181,7 @@ class ZmqConnectionTestCase(unittest.TestCase):
         def check(ignored):
             self.assertEqual(self.factory.testMessage, "Fake success!")
 
-        s = ZmqTestReceiver(
-            ZmqEndpoint(ZmqEndpointType.bind, "inproc://#1"))
+        s = ZmqTestReceiver("inproc://#1", type=BIND)
         self.patch(s, '_connectOrBind', fakeConnectOrBind)
         d = s.listen(self.factory)
         d.addCallback(check)
@@ -205,8 +195,7 @@ class ZmqConnectionTestCase(unittest.TestCase):
         def check(error):
             self.assertEqual(str(error), "exceptions.Exception: ohnoz!")
 
-        s = ZmqTestReceiver(
-            ZmqEndpoint(ZmqEndpointType.bind, "inproc://#1"))
+        s = ZmqTestReceiver("inproc://#1", type=BIND)
         self.patch(s, '_connectOrBind', fakeConnectOrBind)
         failure = s.listen(self.factory)
         d = self.assertFailure(failure, exceptions.ListenError)
